@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>SQL Workbench</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#0B0F14;
+    --panel:#12181F;
+    --panel-2:#161D26;
+    --border:#232C36;
+    --border-soft:#1B222B;
+    --accent:#5EEAD4;
+    --accent-dim:#2E7D6E;
+    --accent-blue:#7C9EFF;
+    --text-primary:#E7EDF3;
+    --text-muted:#7C8A99;
+    --text-faint:#4E5A66;
+    --error:#FF8177;
+    --error-bg:#2A1517;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg-deep);
+    color:var(--text-primary);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding:28px;
+  }
+  .app{
+    max-width:1520px;
+    margin:0 auto;
+  }
+
+  /* Header */
+  .header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:22px;
+    flex-wrap:wrap;
+    gap:14px;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .brand-mark{
+    width:34px;height:34px;
+    border-radius:8px;
+    background:linear-gradient(135deg,var(--accent),var(--accent-blue));
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    color:#08110F;
+    font-size:16px;
+    flex-shrink:0;
+  }
+  .brand-text h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:19px;
+    font-weight:600;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .brand-text p{
+    margin:2px 0 0;
+    font-size:12.5px;
+    color:var(--text-muted);
+  }
+  .header-actions{
+    display:flex;
+    gap:10px;
+    align-items:center;
+  }
+  .btn{
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;
+    font-weight:500;
+    padding:9px 15px;
+    border-radius:8px;
+    border:1px solid var(--border);
+    background:var(--panel-2);
+    color:var(--text-primary);
+    cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    white-space:nowrap;
+  }
+  .btn:hover{border-color:#3A4550; background:#1B232D;}
+  .btn-accent{
+    background:var(--accent);
+    color:#062521;
+    border:none;
+    font-weight:600;
+  }
+  .btn-accent:hover{background:#78F0DB;}
+  .btn:disabled{opacity:.45; cursor:not-allowed;}
+  input[type=file]{display:none;}
+
+  /* Status strip */
+  .status{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:12.5px;
+    color:var(--text-muted);
+    margin-bottom:18px;
+    padding:10px 14px;
+    background:var(--panel);
+    border:1px solid var(--border-soft);
+    border-radius:8px;
+  }
+  .status-dot{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--text-faint);
+    flex-shrink:0;
+  }
+  .status-dot.ready{background:var(--accent); box-shadow:0 0 0 3px rgba(94,234,212,0.15);}
+  .status b{color:var(--text-primary); font-weight:600;}
+
+  /* Layout */
+  .layout{
+    display:grid;
+    grid-template-columns:180px 1.15fr 1.25fr;
+    gap:12px;
+    align-items:start;
+  }
+  .layout > div{
+    min-width:0; /* evita que el contenido ancho de la tabla estire el grid */
+  }
+  @media (max-width:1100px){
+    .layout{grid-template-columns:200px 1fr;}
+    .output-panel{grid-column:1 / -1;}
+  }
+  @media (max-width:820px){
+    .layout{grid-template-columns:1fr;}
+    .output-panel{grid-column:auto;}
+  }
+
+  /* Schema panel */
+  .schema-panel{
+    background:var(--panel);
+    border:1px solid var(--border-soft);
+    border-radius:var(--radius);
+    padding:14px;
+    height:fit-content;
+  }
+  .schema-title{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:11.5px;
+    font-weight:600;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    margin:0 0 12px;
+  }
+  .schema-empty{
+    font-size:12.5px;
+    color:var(--text-faint);
+    line-height:1.5;
+  }
+  .col-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:6px 0;
+    border-bottom:1px solid var(--border-soft);
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+  }
+  .col-item:last-child{border-bottom:none;}
+  .col-name{color:var(--text-primary);}
+  .col-type{color:var(--accent-blue); font-size:10.5px;}
+  .row-count{
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px solid var(--border-soft);
+    font-size:12px;
+    color:var(--text-muted);
+  }
+  .row-count b{color:var(--accent); font-family:'JetBrains Mono',monospace;}
+
+  /* Editor */
+  .editor-panel{
+    background:var(--panel);
+    border:1px solid var(--border-soft);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .editor-bar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 14px;
+    border-bottom:1px solid var(--border-soft);
+    background:var(--panel-2);
+  }
+  .editor-bar-title{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--text-muted);
+  }
+  .editor-pulse{
+    height:2px;
+    background:linear-gradient(90deg, transparent, var(--accent), transparent);
+    background-size:200% 100%;
+    opacity:0;
+  }
+  .editor-pulse.running{
+    opacity:1;
+    animation:pulse-move 0.9s linear infinite;
+  }
+  @keyframes pulse-move{
+    0%{background-position:200% 0;}
+    100%{background-position:-200% 0;}
+  }
+  .editor-body{
+    display:flex;
+  }
+  .line-numbers{
+    width:38px;
+    padding:14px 0;
+    text-align:right;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    line-height:1.6;
+    color:var(--text-faint);
+    background:var(--panel);
+    border-right:1px solid var(--border-soft);
+    overflow:hidden;
+    user-select:none;
+  }
+  .line-numbers div{padding-right:10px;}
+  textarea#sqlInput{
+    flex:1;
+    background:var(--panel);
+    color:var(--text-primary);
+    border:none;
+    outline:none;
+    resize:vertical;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    line-height:1.6;
+    padding:14px 16px;
+    min-height:420px;
+  }
+  .editor-footer{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 14px;
+    border-top:1px solid var(--border-soft);
+    background:var(--panel-2);
+  }
+  .hint{
+    font-size:11.5px;
+    color:var(--text-faint);
+    font-family:'JetBrains Mono',monospace;
+  }
+  kbd{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:1px 6px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+  }
+
+  /* Output */
+  .output-panel{
+    margin-top:0;
+    background:var(--panel);
+    border:1px solid var(--border-soft);
+    border-radius:var(--radius);
+    overflow:hidden;
+    min-width:0;
+    max-width:100%;
+    display:flex;
+    flex-direction:column;
+    height:100%;
+  }
+  .output-bar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 14px;
+    border-bottom:1px solid var(--border-soft);
+    background:var(--panel-2);
+  }
+  .output-title{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--text-primary);
+  }
+  .output-meta{
+    font-size:11.5px;
+    color:var(--text-muted);
+    font-family:'JetBrains Mono',monospace;
+  }
+  .output-body{
+    flex:1;
+    max-height:500px;
+    min-height:500px;
+    overflow-x:auto;
+    overflow-y:auto;
+    min-width:0;
+  }
+  table.result{
+    width:max-content;
+    min-width:100%;
+    border-collapse:collapse;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+  }
+  table.result thead th{
+    position:sticky;
+    top:0;
+    background:var(--panel-2);
+    text-align:left;
+    padding:9px 14px;
+    color:var(--accent);
+    font-weight:600;
+    border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+  table.result tbody td{
+    padding:8px 14px;
+    border-bottom:1px solid var(--border-soft);
+    color:var(--text-primary);
+    white-space:nowrap;
+  }
+  table.result tbody tr:hover{background:#151C24;}
+  table.result tbody tr:nth-child(even){background:rgba(255,255,255,0.012);}
+
+  .empty-state{
+    padding:48px 20px;
+    text-align:center;
+    color:var(--text-faint);
+    font-size:13px;
+  }
+  .empty-state .big{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:15px;
+    color:var(--text-muted);
+    margin-bottom:6px;
+  }
+
+  .error-banner{
+    margin:14px;
+    padding:12px 14px;
+    background:var(--error-bg);
+    border:1px solid #4A2226;
+    border-radius:8px;
+    color:var(--error);
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    line-height:1.5;
+  }
+
+  .footer-note{
+    margin-top:18px;
+    text-align:center;
+    font-size:11.5px;
+    color:var(--text-faint);
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="brand">
+      <div class="brand-mark">SQ</div>
+      <div class="brand-text">
+        <h1>SQL Workbench</h1>
+        <p>Subí cualquier CSV y practicá consultas al instante</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <label class="btn" for="csvFile">↑ Subir CSV</label>
+      <input type="file" id="csvFile" accept=".csv">
+      <button class="btn" id="loadSampleBtn">Usar datos de muestra</button>
+    </div>
+  </div>
+
+  <div class="status">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">Cargando motor SQL…</span>
+  </div>
+
+  <div class="layout">
+    <div class="schema-panel">
+      <p class="schema-title">Tabla: data</p>
+      <div id="schemaBody">
+        <div class="schema-empty">Todavía no hay datos cargados. Subí un CSV o usá los datos de muestra.</div>
+      </div>
+      <div class="row-count" id="rowCount" style="display:none;"></div>
+    </div>
+
+    <div class="editor-panel">
+      <div class="editor-bar">
+        <span class="editor-bar-title">query.sql</span>
+        <button class="btn btn-accent" id="runBtn" disabled>▶ Ejecutar</button>
+      </div>
+      <div class="editor-pulse" id="pulse"></div>
+      <div class="editor-body">
+        <div class="line-numbers" id="lineNumbers"><div>1</div></div>
+        <textarea id="sqlInput" spellcheck="false" placeholder="SELECT * FROM data LIMIT 20;"></textarea>
+      </div>
+      <div class="editor-footer">
+        <span class="hint">La tabla siempre se llama <b>data</b></span>
+        <span class="hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> para ejecutar</span>
+      </div>
+    </div>
+
+    <div class="output-panel">
+      <div class="output-bar">
+        <span class="output-title">Resultado</span>
+        <span class="output-meta" id="outputMeta"></span>
+      </div>
+      <div class="output-body" id="outputBody">
+        <div class="empty-state">
+          <div class="big">Sin resultados todavía</div>
+          Cargá datos y ejecutá una consulta para verlos acá.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="footer-note">Corre 100% en tu navegador — tus datos no se suben a ningún servidor.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+<script>
+let SQL = null;
+let db = null;
+
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const runBtn = document.getElementById('runBtn');
+const sqlInput = document.getElementById('sqlInput');
+const lineNumbers = document.getElementById('lineNumbers');
+const pulse = document.getElementById('pulse');
+const schemaBody = document.getElementById('schemaBody');
+const rowCountEl = document.getElementById('rowCount');
+const outputBody = document.getElementById('outputBody');
+const outputMeta = document.getElementById('outputMeta');
+
+function setStatus(text, ready){
+  statusText.innerHTML = text;
+  statusDot.classList.toggle('ready', !!ready);
+}
+
+initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${f}` })
+  .then(sql => {
+    SQL = sql;
+    setStatus('Motor SQL listo. Subí un CSV o usá los datos de muestra.', true);
+  })
+  .catch(err => {
+    setStatus('No se pudo cargar el motor SQL. Revisá tu conexión a internet.', false);
+    console.error(err);
+  });
+
+function updateLineNumbers(){
+  const lines = sqlInput.value.split('\n').length;
+  let html = '';
+  for(let i=1;i<=lines;i++) html += `<div>${i}</div>`;
+  lineNumbers.innerHTML = html;
+}
+sqlInput.addEventListener('input', updateLineNumbers);
+sqlInput.addEventListener('scroll', () => { lineNumbers.scrollTop = sqlInput.scrollTop; });
+sqlInput.addEventListener('keydown', e => {
+  if((e.ctrlKey || e.metaKey) && e.key === 'Enter'){ e.preventDefault(); runQuery(); }
+});
+
+function sanitizeColName(name, idx){
+  let clean = String(name || `col_${idx}`).trim().replace(/[^a-zA-Z0-9_]/g, '_');
+  if(!clean) clean = `col_${idx}`;
+  if(/^[0-9]/.test(clean)) clean = `c_${clean}`;
+  return clean;
+}
+
+function loadIntoDb(fields, rows){
+  if(!SQL){ setStatus('El motor SQL todavía no está listo, esperá un segundo.', false); return; }
+  db = new SQL.Database();
+
+  const cols = fields.map((f, i) => sanitizeColName(f, i));
+  const createSql = `CREATE TABLE data (${cols.map(c => `"${c}"`).join(', ')});`;
+  db.run(createSql);
+
+  const placeholders = cols.map(() => '?').join(', ');
+  const insertSql = `INSERT INTO data (${cols.map(c => `"${c}"`).join(', ')}) VALUES (${placeholders});`;
+  const stmt = db.prepare(insertSql);
+  db.run('BEGIN TRANSACTION;');
+  rows.forEach(row => {
+    const values = fields.map(f => {
+      const v = row[f];
+      return v === undefined ? null : v;
+    });
+    stmt.run(values);
+  });
+  db.run('COMMIT;');
+  stmt.free();
+
+  renderSchema(cols, rows);
+  runBtn.disabled = false;
+  setStatus(`Datos cargados: <b>${rows.length}</b> filas, <b>${cols.length}</b> columnas.`, true);
+
+  sqlInput.value = 'SELECT *\nFROM data\nLIMIT 20;';
+  updateLineNumbers();
+  runQuery();
+}
+
+function inferType(rows, field){
+  for(const r of rows){
+    const v = r[field];
+    if(v === null || v === undefined || v === '') continue;
+    return typeof v === 'number' ? 'NUM' : 'TEXT';
+  }
+  return 'TEXT';
+}
+
+function renderSchema(cols, rows){
+  schemaBody.innerHTML = cols.map((c, i) => {
+    const type = inferType(rows, Object.keys(rows[0] || {})[i] ?? c);
+    return `<div class="col-item"><span class="col-name">${c}</span><span class="col-type">${type}</span></div>`;
+  }).join('');
+  rowCountEl.style.display = 'block';
+  rowCountEl.innerHTML = `<b>${rows.length}</b> filas cargadas`;
+}
+
+document.getElementById('csvFile').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  setStatus(`Leyendo ${file.name}…`, false);
+  Papa.parse(file, {
+    header: true,
+    dynamicTyping: true,
+    skipEmptyLines: true,
+    complete: results => {
+      if(!results.data.length){
+        setStatus('El CSV parece vacío o no se pudo leer.', false);
+        return;
+      }
+      loadIntoDb(results.meta.fields, results.data);
+    },
+    error: err => setStatus('Error leyendo el CSV: ' + err.message, false)
+  });
+});
+
+document.getElementById('loadSampleBtn').addEventListener('click', () => {
+  const sampleCsv = `year,gender,segment,rank_segment,skater,nation,tss,tes,pcs,ded
+2006,M,SP,1,PLUSHENKO Evgeni,RUS,90.66,49.69,40.97,0
+2006,M,SP,2,WEIR Johnny,USA,80.00,40.99,39.01,0
+2006,M,SP,3,LAMBIEL Stephane,SUI,79.04,40.61,38.43,0
+2006,M,SP,4,JOUBERT Brian,FRA,77.77,40.59,37.18,0
+2006,M,SP,5,TAKAHASHI Daisuke,JPN,73.77,38.45,35.32,0
+2010,M,SP,1,LYSACEK Evan,USA,90.30,43.98,46.32,0
+2010,M,SP,2,PLUSHENKO Evgeni,RUS,89.90,47.10,42.80,0
+2010,M,SP,3,TAKAHASHI Daisuke,JPN,90.25,45.35,44.90,0
+2014,M,SP,1,HANYU Yuzuru,JPN,101.45,55.71,45.74,0
+2014,M,SP,2,CHAN Patrick,CAN,97.52,52.24,45.28,0
+2018,M,SP,1,HANYU Yuzuru,JPN,111.68,59.51,52.17,0
+2018,M,SP,2,UNO Shoma,JPN,104.17,54.75,49.42,0
+2022,M,SP,1,MALININ Ilia,USA,96.99,52.05,44.94,0
+2022,M,SP,2,CHEN Nathan,USA,111.71,59.85,51.86,0
+2006,W,SP,1,ARAKAWA Shizuka,JPN,66.02,32.86,33.16,0
+2010,W,SP,1,KIM Yuna,KOR,78.50,44.10,34.40,0
+2014,W,SP,1,SOTNIKOVA Adelina,RUS,74.64,39.60,35.04,0
+2018,W,SP,1,ZAGITOVA Alina,RUS,82.92,45.30,37.62,0
+2022,W,SP,1,SHCHERBAKOVA Anna,RUS,80.20,44.62,35.58,0`;
+
+  const parsed = Papa.parse(sampleCsv, { header: true, dynamicTyping: true, skipEmptyLines: true });
+  loadIntoDb(parsed.meta.fields, parsed.data);
+});
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function runQuery(){
+  if(!db){ setStatus('Cargá datos primero.', false); return; }
+  const sql = sqlInput.value.trim();
+  if(!sql) return;
+
+  pulse.classList.add('running');
+  runBtn.disabled = true;
+
+  setTimeout(() => {
+    try{
+      const res = db.exec(sql);
+      pulse.classList.remove('running');
+      runBtn.disabled = false;
+
+      if(!res.length){
+        outputBody.innerHTML = `<div class="empty-state"><div class="big">Consulta ejecutada</div>No devolvió filas para mostrar.</div>`;
+        outputMeta.textContent = '';
+        return;
+      }
+
+      const { columns, values } = res[0];
+      outputMeta.textContent = `${values.length} fila${values.length===1?'':'s'} · ${columns.length} columna${columns.length===1?'':'s'}`;
+
+      let html = '<table class="result"><thead><tr>';
+      columns.forEach(c => html += `<th>${escapeHtml(c)}</th>`);
+      html += '</tr></thead><tbody>';
+      values.forEach(row => {
+        html += '<tr>';
+        row.forEach(cell => html += `<td>${cell === null ? '<span style="color:#4E5A66">NULL</span>' : escapeHtml(cell)}</td>`);
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      outputBody.innerHTML = html;
+
+    }catch(err){
+      pulse.classList.remove('running');
+      runBtn.disabled = false;
+      outputBody.innerHTML = `<div class="error-banner">✕ ${escapeHtml(err.message)}</div>`;
+      outputMeta.textContent = '';
+    }
+  }, 120);
+}
+
+runBtn.addEventListener('click', runQuery);
+updateLineNumbers();
+</script>
+</body>
+</html>
